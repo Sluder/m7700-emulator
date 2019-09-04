@@ -1,20 +1,38 @@
 #!/usr/bin/python
 
-class MemoryBlock:
-    def __init__(self, from_addr, to_addr):
-        self.from_addr = hex(from_addr)
-        self.to_addr = hex(to_addr)
+from bitarray import bitarray
 
-        self.memory = [0] * (int(to_addr) - int(from_addr))
+class MemoryBlock:
+    def __init__(self, from_addr, to_addr, name):
+        self.from_addr = from_addr
+        self.to_addr = to_addr
+        self.name = name
+
+        self.memory = {}
+        for address in range(self.from_addr, self.to_addr):
+            self.memory[hex(address)] = bitarray('0' * 8)
 
     def load(self, address):
         """
         Retreive data from memory
         """
-        return self.memory[int(address, 16) - int(self.from_addr, 16)]
+        print('[{}] - Address \'{}\' read'.format(self.name, address))
+
+        # Stuff bits for consistency
+        return bitarray('0' * 8) + (self.memory[address])
 
     def store(self, address, data):
         """
         Store data into memory
         """
-        self.memory[int(address) - int(self.from_addr)] = hex(data)
+        print('[{}] - Address \'{}\' set {}'.format(self.name, address, data))
+
+        self.memory[address] = bittarray(data)
+
+    def __str__(self):
+        str = ''
+
+        for address in range(self.from_addr, self.to_addr):
+            str += '{}\t{}\n'.format(hex(address), self.memory[hex(address)].tobytes().hex())
+
+        return str
