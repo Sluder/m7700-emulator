@@ -21,4 +21,8 @@ def print_code():
 if __name__ == '__main__':
     engine = Engine(0x9000)
 
-    engine.parse_instruction('lda bl, #0x90')
+    engine.parse_instruction('cmp al, #0x0100')
+    # engine.parse_instruction('adc ax, 0x1060')
+    # engine.parse_instruction('and ax, #0x00ff')
+
+    print(engine.r)

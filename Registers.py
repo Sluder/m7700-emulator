@@ -4,28 +4,32 @@ import sys
 from bitarray import bitarray
 
 class Registers:
+    """
+    Holds all M7700 16-bit registers
+    - Partial reg's like 'ax' can be used as higher & lower registers (i.e. ah, al)
+    """
+
     def __init__(self, pc=0x0):
         self.reset(pc)
 
     def reset(self, pc):
         self.pc = bitarray(bin(pc)[2:])
 
-        # Partial reg's are appended higher with 'h', lower with 'l'. i.e. al, ah
         self.ax = bitarray('0' * 16) # Accumulator
         self.bx = bitarray('0' * 16) # 2nd Accumulator
-        self.xx = bitarray('0' * 16)  # Index
-        self.yx = bitarray('0' * 16)  # 2nd Index
+        self.xx = bitarray('0' * 16) # Index
+        self.yx = bitarray('0' * 16) # 2nd Index
         self.s = bitarray('0' * 16)  # Stack pointer
 
-        self.flags = {
-            'N' : 0, # Negative
-            'V' : 0, # Overflow
-            'm' : 0, # Date length
-            'x' : 0, # Index register length
-            'D' : 0, # Disable mode
-            'I' : 0, # Interrupt disable
+        self.ps = {
+            'C' : 0, # Carry
             'Z' : 0, # Zero
-            'C' : 0  # Carry
+            'I' : 0, # Interrupt disable
+            'D' : 0, # Disable mode
+            'x' : 0, # Index register length
+            'm' : 0, # Date length
+            'V' : 0, # Overflow
+            'N' : 0, # Negative
         }
 
     def get_register(self, register_name):
@@ -64,15 +68,16 @@ class Registers:
         else:
             setattr(self, parent_reg, value)
 
-        print('[REG] - Register \'{}\' set {}'.format(register_name, '0x' + value.tobytes().hex()))
+        print('[reg] - Register \'{}\' set {}'.format(register_name, '0x' + value.tobytes().hex()))
 
         return value
 
     def get_flag(self, flag):
         """
         Gets current value of a flag
+        :param flag: Character of flag to retrieve
         """
-        return bool(self.flags[flag])
+        return bool(self.ps[flag])
 
     def set_flag(self, flag_name, value):
         """
@@ -80,29 +85,22 @@ class Registers:
         :param flag_name: e.g. 'N' or 'm'
         :param value: 1 or 0
         """
-        self.flags[flag_name] = bool(value)
+        self.ps[flag_name] = int(value)
 
     def checkZN(self, last_value):
         """
-        Checks zero & negative flags
-        :parm last_value: Expects BitArray
+        Sets zero & negative flags if applicable
+        :parm last_value: Last calculated value (Expects int)
         """
-        # Zero
-        self.set_flag('Z', last_value <= bitarray(0))
-
-        # Negative
-        if self.get_flag('m') and last_value[8]:
-            self.set_flag('N', 1)
-        elif last_value[0]:
-            self.set_flag('N', 1)
-        else:
-            self.set_flag('N', 0)
+        self.set_flag('Z', last_value == 0)
+        self.set_flag('N', last_value < 0)
 
     def __str__(self):
         return '\n'.join((
-            'PC: 0x{}'.format(self.get_register('pc').tobytes().hex()),
+            '\nPC: 0x{}'.format(self.get_register('pc').tobytes().hex()),
             'A: 0x{} | AH: 0x{} | AL: 0x{}'.format(self.get_register('ax').tobytes().hex(), self.get_register('ah').tobytes().hex(), self.get_register('al').tobytes().hex()),
             'B: 0x{} | BH: 0x{} | BL: 0x{}'.format(self.get_register('bx').tobytes().hex(), self.get_register('bh').tobytes().hex(), self.get_register('bl').tobytes().hex()),
             'X: 0x{} | XH: 0x{} | XL: 0x{}'.format(self.get_register('xx').tobytes().hex(), self.get_register('xh').tobytes().hex(), self.get_register('xl').tobytes().hex()),
-            'Y: 0x{} | YH: 0x{} | YL: 0x{}'.format(self.get_register('yx').tobytes().hex(), self.get_register('yh').tobytes().hex(), self.get_register('yl').tobytes().hex())
+            'Y: 0x{} | YH: 0x{} | YL: 0x{}'.format(self.get_register('yx').tobytes().hex(), self.get_register('yh').tobytes().hex(), self.get_register('yl').tobytes().hex()),
+            ' | '.join('%s: %s' % (flag, value) for (flag, value) in self.ps.items())
         ))
